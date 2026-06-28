@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Maze Speedrun</title>
+    <link rel="icon" type="image/png" href="/favicon.png" />
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <main class="app">
+      <header class="topbar">
+        <div>
+          <h1>Maze Speedrun</h1>
+          <p>Race from the green gate to the red gate without touching walls.</p>
+        </div>
+        <div class="stats" aria-live="polite">
+          <div>
+            <span>Time</span>
+            <strong id="timer">0.00s</strong>
+          </div>
+          <div>
+            <span>Best</span>
+            <strong id="bestTime">--</strong>
+          </div>
+        </div>
+      </header>
+
+      <section class="controls" aria-label="Maze controls">
+        <label class="size-control" for="mazeSize">
+          <span>Maze size</span>
+          <output id="mazeSizeValue" for="mazeSize">16 x 16</output>
+          <input id="mazeSize" type="range" min="6" max="34" step="2" value="16" />
+        </label>
+        <fieldset class="movement-control">
+          <legend>Movement method</legend>
+          <label>
+            <input type="radio" name="movementMode" value="tap" />
+            Tap
+          </label>
+          <label>
+            <input type="radio" name="movementMode" value="hold" checked />
+            Hold
+          </label>
+        </fieldset>
+        <fieldset class="seed-control">
+          <legend>Seed mode</legend>
+          <label>
+            <input type="radio" name="seedMode" value="fixed" checked />
+            Set seed
+          </label>
+          <label>
+            <input type="radio" name="seedMode" value="fresh" />
+            New after finish
+          </label>
+          <input id="seedInput" maxlength="16" autocomplete="off" spellcheck="false" />
+          <label class="practice-toggle">
+            <input id="practicePathToggle" type="checkbox" />
+            Practice path
+          </label>
+        </fieldset>
+        <button id="generateButton" type="button">Generate Maze</button>
+        <button id="restartButton" class="secondary" type="button">Restart Run</button>
+      </section>
+
+      <section class="game-shell">
+        <canvas id="mazeCanvas" width="900" height="900" aria-label="Playable maze"></canvas>
+        <aside class="side-panel">
+          <div class="panel-block">
+            <span class="label">Current time</span>
+            <strong id="sideCurrentTime">0.00s</strong>
+          </div>
+          <div class="panel-block">
+            <span class="label">Best run</span>
+            <strong id="sideBestTime">--</strong>
+          </div>
+          <div class="panel-block">
+            <span class="label">Movement</span>
+            <strong id="movementText">Use WASD or arrow keys to move</strong>
+          </div>
+          <div class="panel-block">
+            <span class="label">Goal</span>
+            <strong>Start left, escape right</strong>
+          </div>
+        </aside>
+      </section>
+    </main>
+
+    <div class="new-best hidden" id="newBestText" aria-live="polite">NEW BEST!</div>
+
+    <script src="/game.js?v=8"></script>
+  </body>
+</html>
