@@ -3,281 +3,74 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Maze Maker Academy</title>
+    <title>Maze Speedrun</title>
     <link rel="icon" type="image/png" href="/favicon.png" />
     <link rel="stylesheet" href="/styles.css" />
   </head>
   <body>
-    <header class="site-header">
-      <a class="brand" href="#top" aria-label="Maze Maker Academy home">
-        <span class="brand-mark" aria-hidden="true"></span>
-        <span>Maze Maker Academy</span>
-      </a>
-      <nav class="nav-links" aria-label="Lesson sections">
-        <a href="#algorithm">Algorithm</a>
-        <a href="#math">Math</a>
-        <a href="#code">Code</a>
-        <a href="#play">Play</a>
-      </nav>
-    </header>
-
-    <main id="top">
-      <section class="hero">
-        <div class="hero-copy">
-          <p class="eyebrow">Build the maze game from zero</p>
-          <h1>Learn how a maze becomes a speedrun.</h1>
-          <p>
-            This guided website teaches the idea, the math, and the JavaScript behind the
-            maze generator. No coding knowledge needed: every step uses tiny examples,
-            friendly words, and live buttons you can poke.
-          </p>
-          <div class="hero-actions">
-            <a class="button primary" href="#algorithm">Start learning</a>
-            <a class="button secondary" href="#play">Try the finished game</a>
-          </div>
-        </div>
-        <div class="hero-demo" aria-label="Animated maze preview">
-          <canvas id="heroCanvas" width="520" height="520"></canvas>
-        </div>
+    <main class="app">
+      <section class="controls" aria-label="Maze controls">
+        <label class="size-control" for="mazeSize">
+          <span>Maze size</span>
+          <output id="mazeSizeValue" for="mazeSize">16 x 16</output>
+          <input id="mazeSize" type="range" min="6" max="34" step="2" value="16" />
+        </label>
+        <fieldset class="movement-control">
+          <legend>Movement method</legend>
+          <label>
+            <input type="radio" name="movementMode" value="tap" />
+            Tap
+          </label>
+          <label>
+            <input type="radio" name="movementMode" value="hold" checked />
+            Hold
+          </label>
+        </fieldset>
+        <fieldset class="seed-control">
+          <legend>Seed mode</legend>
+          <label>
+            <input type="radio" name="seedMode" value="fixed" checked />
+            Set seed
+          </label>
+          <label>
+            <input type="radio" name="seedMode" value="fresh" />
+            New after finish
+          </label>
+          <input id="seedInput" maxlength="16" autocomplete="off" spellcheck="false" />
+          <label class="practice-toggle">
+            <input id="practicePathToggle" type="checkbox" />
+            Practice path
+          </label>
+        </fieldset>
+        <button id="generateButton" type="button">Generate Maze</button>
+        <button id="restartButton" class="secondary" type="button">Restart Run</button>
       </section>
 
-      <section class="progress-strip" aria-label="Course steps">
-        <a href="#map">1. Think like a grid</a>
-        <a href="#algorithm">2. Carve paths</a>
-        <a href="#math">3. Add math</a>
-        <a href="#code">4. Write code</a>
-        <a href="#play">5. Play it</a>
-      </section>
-
-      <section id="map" class="lesson-section two-column">
-        <div>
-          <p class="eyebrow">Step 1</p>
-          <h2>A maze is just rooms and doors.</h2>
-          <p>
-            Imagine graph paper. Each square is a room. A wall is just a closed door
-            between two neighboring rooms. Making a maze means deciding which doors to open.
-          </p>
-          <p>
-            The computer stores each square with four yes/no wall switches: north, east,
-            south, and west. If the east wall opens in one square, the west wall must open
-            in the square next to it.
-          </p>
-        </div>
-        <div class="interactive-board">
-          <div class="board-heading">
-            <h3>Room inspector</h3>
-            <p>Tap a room to see its address.</p>
+      <section class="game-shell">
+        <canvas id="mazeCanvas" width="900" height="900" aria-label="Playable maze"></canvas>
+        <aside class="side-panel">
+          <div class="panel-block">
+            <span class="label">Current time</span>
+            <strong id="sideCurrentTime">0.00s</strong>
           </div>
-          <div id="gridInspector" class="grid-inspector" aria-label="Interactive room grid"></div>
-          <p id="gridReadout" class="readout">Room address: x = 0, y = 0</p>
-        </div>
-      </section>
-
-      <section id="algorithm" class="lesson-section">
-        <div class="section-head">
-          <p class="eyebrow">Step 2</p>
-          <h2>The maze algorithm: explore, carve, back up.</h2>
-          <p>
-            This project uses depth-first search. That sounds intense, but the rule is
-            simple: walk to a neighbor you have never visited, knock down the wall, and
-            remember your path with a stack. If you get stuck, step backward until a new
-            choice appears.
-          </p>
-        </div>
-        <div class="algorithm-lab">
-          <div class="demo-panel">
-            <canvas id="algorithmCanvas" width="560" height="420"></canvas>
-            <div class="demo-controls">
-              <button id="algoStepButton" type="button">Next carve</button>
-              <button id="algoAutoButton" type="button">Auto</button>
-              <button id="algoResetButton" class="secondary-button" type="button">Reset</button>
-            </div>
+          <div class="panel-block">
+            <span class="label">Best run</span>
+            <strong id="sideBestTime">--</strong>
           </div>
-          <ol class="explain-list">
-            <li>
-              <strong>Start somewhere.</strong>
-              Mark that square visited and put it on the stack.
-            </li>
-            <li>
-              <strong>Look around.</strong>
-              Find neighbors that are inside the grid and not visited yet.
-            </li>
-            <li>
-              <strong>Choose one.</strong>
-              Open the wall between the current square and that neighbor.
-            </li>
-            <li>
-              <strong>Move forward.</strong>
-              Mark the neighbor visited and push it onto the stack.
-            </li>
-            <li>
-              <strong>Backtrack.</strong>
-              If there are no choices, pop the stack and try from the earlier square.
-            </li>
-          </ol>
-        </div>
-      </section>
-
-      <section id="math" class="lesson-section two-column">
-        <div>
-          <p class="eyebrow">Step 3</p>
-          <h2>The math is mostly counting and coordinates.</h2>
-          <p>
-            A grid position is written as <code>(x, y)</code>. Moving east adds 1 to
-            <code>x</code>. Moving south adds 1 to <code>y</code>. That is how arrow keys
-            become movement.
-          </p>
-          <p>
-            A perfect maze with <code>N</code> rooms has exactly <code>N - 1</code> open
-            doors. Why? Because every new door connects one brand-new room. For a
-            <code>6 x 6</code> maze, that means <code>36</code> rooms and
-            <code>35</code> carved doors.
-          </p>
-        </div>
-        <div class="math-lab">
-          <label for="mathSize">Maze size</label>
-          <input id="mathSize" type="range" min="3" max="14" value="6" />
-          <div class="math-stats">
-            <div>
-              <span>Rooms</span>
-              <strong id="roomCount">36</strong>
-            </div>
-            <div>
-              <span>Open doors</span>
-              <strong id="doorCount">35</strong>
-            </div>
-            <div>
-              <span>Wall switches</span>
-              <strong id="wallSwitchCount">144</strong>
-            </div>
+          <div class="panel-block">
+            <span class="label">Movement</span>
+            <strong id="movementText">Use WASD or arrow keys to move</strong>
           </div>
-          <div class="coordinate-card">
-            <span>Move east</span>
-            <code>(x, y) -> (x + 1, y)</code>
+          <div class="panel-block">
+            <span class="label">Goal</span>
+            <strong>Start left, escape right</strong>
           </div>
-          <div class="coordinate-card">
-            <span>Move north</span>
-            <code>(x, y) -> (x, y - 1)</code>
-          </div>
-        </div>
-      </section>
-
-      <section id="code" class="lesson-section">
-        <div class="section-head">
-          <p class="eyebrow">Step 4</p>
-          <h2>Turn the idea into code, one tiny piece at a time.</h2>
-          <p>
-            These snippets are the main ingredients. Read them like recipes: make cells,
-            find neighbors, remove matching walls, then repeat until the stack is empty.
-          </p>
-        </div>
-        <div class="code-tabs" aria-label="Code lessons">
-          <div class="tab-list" role="tablist">
-            <button class="tab-button active" type="button" data-tab="cell">Cell</button>
-            <button class="tab-button" type="button" data-tab="directions">Directions</button>
-            <button class="tab-button" type="button" data-tab="generator">Generator</button>
-            <button class="tab-button" type="button" data-tab="path">Shortest path</button>
-          </div>
-          <div class="code-card">
-            <div id="codeLessonText" class="code-lesson-text"></div>
-            <pre><code id="codeBlock"></code></pre>
-          </div>
-        </div>
-      </section>
-
-      <section class="lesson-section two-column">
-        <div>
-          <p class="eyebrow">Step 5</p>
-          <h2>How the player and timer fit in.</h2>
-          <p>
-            Once the maze exists, the game loop repeats many times per second. It reads
-            keyboard input, asks if movement is allowed, updates the timer, and draws the
-            new picture on the canvas.
-          </p>
-        </div>
-        <div class="loop-diagram" aria-label="Game loop diagram">
-          <span>Read keys</span>
-          <span>Check walls</span>
-          <span>Move player</span>
-          <span>Draw canvas</span>
-          <span>Update timer</span>
-        </div>
-      </section>
-
-      <section id="play" class="play-section">
-        <div class="section-head">
-          <p class="eyebrow">Finished project</p>
-          <h2>Now play the maze you understand.</h2>
-          <p>
-            Use WASD or arrow keys. Turn on the practice path to see how breadth-first
-            search finds the shortest route through the maze.
-          </p>
-        </div>
-        <div class="game-area">
-          <section class="controls" aria-label="Maze controls">
-            <label class="size-control" for="mazeSize">
-              <span>Maze size</span>
-              <output id="mazeSizeValue" for="mazeSize">16 x 16</output>
-              <input id="mazeSize" type="range" min="6" max="34" step="2" value="16" />
-            </label>
-            <fieldset class="movement-control">
-              <legend>Movement</legend>
-              <label>
-                <input type="radio" name="movementMode" value="tap" />
-                Tap
-              </label>
-              <label>
-                <input type="radio" name="movementMode" value="hold" checked />
-                Hold
-              </label>
-            </fieldset>
-            <fieldset class="seed-control">
-              <legend>Seed mode</legend>
-              <label>
-                <input type="radio" name="seedMode" value="fixed" checked />
-                Set seed
-              </label>
-              <label>
-                <input type="radio" name="seedMode" value="fresh" />
-                New after finish
-              </label>
-              <input id="seedInput" type="text" maxlength="16" autocomplete="off" spellcheck="false" />
-              <label class="practice-toggle">
-                <input id="practicePathToggle" type="checkbox" />
-                Practice path
-              </label>
-            </fieldset>
-            <button id="generateButton" type="button">Generate</button>
-            <button id="restartButton" class="secondary-button" type="button">Restart</button>
-          </section>
-
-          <section class="game-shell">
-            <canvas id="mazeCanvas" width="900" height="900" aria-label="Playable maze"></canvas>
-            <aside class="side-panel">
-              <div class="panel-block">
-                <span class="label">Current time</span>
-                <strong id="sideCurrentTime">0.00s</strong>
-              </div>
-              <div class="panel-block">
-                <span class="label">Best run</span>
-                <strong id="sideBestTime">--</strong>
-              </div>
-              <div class="panel-block">
-                <span class="label">Movement</span>
-                <strong id="movementText">Use WASD or arrow keys</strong>
-              </div>
-              <div class="panel-block">
-                <span class="label">Goal</span>
-                <strong>Start green, escape red</strong>
-              </div>
-            </aside>
-          </section>
-        </div>
+        </aside>
       </section>
     </main>
 
     <div class="new-best hidden" id="newBestText" aria-live="polite">NEW BEST!</div>
 
-    <script src="/game.js?v=10"></script>
+    <script src="/game.js?v=9"></script>
   </body>
 </html>
