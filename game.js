@@ -419,6 +419,381 @@ class CanvasMazeRenderer {
   }
 }
 
+class AlgorithmDemo {
+  constructor(canvas) {
+    this.canvas = canvas;
+    this.context = canvas.getContext("2d");
+    this.size = 6;
+    this.timer = null;
+    this.reset();
+  }
+
+  reset() {
+    this.cells = [];
+    for (let y = 0; y < this.size; y += 1) {
+      const row = [];
+      for (let x = 0; x < this.size; x += 1) row.push(new MazeCell(x, y));
+      this.cells.push(row);
+    }
+    this.stack = [this.getCell(0, 0)];
+    this.stack[0].visited = true;
+    this.current = this.stack[0];
+    this.finished = false;
+    this.render();
+  }
+
+  getCell(x, y) {
+    if (x < 0 || y < 0 || x >= this.size || y >= this.size) return null;
+    return this.cells[y][x];
+  }
+
+  step() {
+    if (this.finished) return;
+
+    while (this.stack.length > 0) {
+      this.current = this.stack[this.stack.length - 1];
+      const neighbors = [];
+
+      for (const direction of Directions) {
+        const next = this.getCell(this.current.x + direction.dx, this.current.y + direction.dy);
+        if (next && !next.visited) neighbors.push({ cell: next, direction });
+      }
+
+      if (neighbors.length === 0) {
+        this.stack.pop();
+        continue;
+      }
+
+      const nextStep = neighbors[Math.floor(Math.random() * neighbors.length)];
+      this.current.walls[nextStep.direction.name] = false;
+      nextStep.cell.walls[nextStep.direction.opposite] = false;
+      nextStep.cell.visited = true;
+      this.stack.push(nextStep.cell);
+      this.current = nextStep.cell;
+      this.render();
+      return;
+    }
+
+    this.finished = true;
+    this.render();
+  }
+
+  toggleAuto(button) {
+    if (this.timer) {
+      window.clearInterval(this.timer);
+      this.timer = null;
+      button.textContent = "Auto";
+      return;
+    }
+
+    button.textContent = "Pause";
+    this.timer = window.setInterval(() => {
+      this.step();
+      if (this.finished) this.toggleAuto(button);
+    }, 180);
+  }
+
+  render() {
+    const ctx = this.context;
+    const canvasSize = Math.min(this.canvas.width, this.canvas.height);
+    const padding = 28;
+    const cellSize = (canvasSize - padding * 2) / this.size;
+    const offsetX = (this.canvas.width - canvasSize) / 2;
+
+    ctx.clearRect(0, 0, canvasSize, this.canvas.height);
+    ctx.fillStyle = "#132027";
+    ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+
+    for (let y = 0; y < this.size; y += 1) {
+      for (let x = 0; x < this.size; x += 1) {
+        const cell = this.getCell(x, y);
+        const left = offsetX + padding + x * cellSize;
+        const top = padding + y * cellSize;
+
+        ctx.fillStyle = cell.visited ? "#d8f5e6" : "#27343c";
+        ctx.fillRect(left + 2, top + 2, cellSize - 4, cellSize - 4);
+
+        if (this.stack.includes(cell)) {
+          ctx.fillStyle = "rgba(246, 184, 75, 0.55)";
+          ctx.fillRect(left + 5, top + 5, cellSize - 10, cellSize - 10);
+        }
+
+        if (cell === this.current) {
+          ctx.fillStyle = "#f26457";
+          ctx.beginPath();
+          ctx.arc(left + cellSize / 2, top + cellSize / 2, cellSize * 0.22, 0, Math.PI * 2);
+          ctx.fill();
+        }
+
+        const right = left + cellSize;
+        const bottom = top + cellSize;
+        ctx.strokeStyle = "#f8f5ee";
+        ctx.lineWidth = 4;
+        ctx.beginPath();
+        if (cell.walls.North) {
+          ctx.moveTo(left, top);
+          ctx.lineTo(right, top);
+        }
+        if (cell.walls.East) {
+          ctx.moveTo(right, top);
+          ctx.lineTo(right, bottom);
+        }
+        if (cell.walls.South) {
+          ctx.moveTo(right, bottom);
+          ctx.lineTo(left, bottom);
+        }
+        if (cell.walls.West) {
+          ctx.moveTo(left, bottom);
+          ctx.lineTo(left, top);
+        }
+        ctx.stroke();
+      }
+    }
+
+    ctx.fillStyle = "#f8f5ee";
+    ctx.font = "700 18px system-ui";
+    ctx.fillText(this.finished ? "Maze complete" : `Stack size: ${this.stack.length}`, offsetX + 28, 398);
+  }
+}
+
+const codeLessons = {
+  cell: {
+    title: "A cell is one room.",
+    text:
+      "Each room remembers its position and which walls are still standing. At the start, every wall is closed.",
+    code: `class MazeCell {
+  constructor(x, y) {
+    this.x = x;
+    this.y = y;
+    this.visited = false;
+    this.walls = {
+      North: true,
+      East: true,
+      South: true,
+      West: true,
+    };
+  }
+}`,
+  },
+  directions: {
+    title: "Directions are tiny coordinate changes.",
+    text:
+      "A direction tells the player how x and y should change. It also knows the opposite wall to open in the next room.",
+    code: `const Direction = Object.freeze({
+  North: { dx: 0, dy: -1, opposite: "South" },
+  East: { dx: 1, dy: 0, opposite: "West" },
+  South: { dx: 0, dy: 1, opposite: "North" },
+  West: { dx: -1, dy: 0, opposite: "East" },
+});`,
+  },
+  generator: {
+    title: "The generator carves until the stack is empty.",
+    text:
+      "The stack is the trail of rooms we can backtrack through. When the current room has no fresh neighbors, we step backward.",
+    code: `while (stack.length > 0) {
+  const current = stack[stack.length - 1];
+  const neighbors = getUnvisitedNeighbors(current);
+
+  if (neighbors.length === 0) {
+    stack.pop();
+    continue;
+  }
+
+  const next = chooseRandom(neighbors);
+  removeWallBetween(current, next);
+  next.cell.visited = true;
+  stack.push(next.cell);
+}`,
+  },
+  path: {
+    title: "The shortest path uses a queue.",
+    text:
+      "Breadth-first search checks nearby rooms first. The first time it reaches the exit, it has found the shortest route.",
+    code: `const queue = [start];
+const visited = new Set([startKey]);
+
+while (queue.length > 0) {
+  const current = queue.shift();
+  if (current === exit) return rebuildPath();
+
+  for (const neighbor of openNeighbors(current)) {
+    if (visited.has(neighbor.key)) continue;
+    visited.add(neighbor.key);
+    cameFrom.set(neighbor.key, current);
+    queue.push(neighbor);
+  }
+}`,
+  },
+};
+
+function initializeLessonTools() {
+  initializeGridInspector();
+  initializeMathLab();
+  initializeCodeTabs();
+  initializeAlgorithmDemo();
+  initializeHeroPreview();
+}
+
+function initializeGridInspector() {
+  const grid = document.querySelector("#gridInspector");
+  const readout = document.querySelector("#gridReadout");
+  if (!grid || !readout) return;
+
+  for (let y = 0; y < 5; y += 1) {
+    for (let x = 0; x < 5; x += 1) {
+      const button = document.createElement("button");
+      button.type = "button";
+      button.className = "grid-cell";
+      button.textContent = `${x},${y}`;
+      button.addEventListener("click", () => {
+        grid.querySelectorAll(".grid-cell").forEach((cell) => cell.classList.remove("active"));
+        button.classList.add("active");
+        readout.textContent = `Room address: x = ${x}, y = ${y}`;
+      });
+      grid.appendChild(button);
+      if (x === 0 && y === 0) button.classList.add("active");
+    }
+  }
+}
+
+function initializeMathLab() {
+  const slider = document.querySelector("#mathSize");
+  const roomCount = document.querySelector("#roomCount");
+  const doorCount = document.querySelector("#doorCount");
+  const wallSwitchCount = document.querySelector("#wallSwitchCount");
+  if (!slider || !roomCount || !doorCount || !wallSwitchCount) return;
+
+  const update = () => {
+    const size = Number(slider.value);
+    const rooms = size * size;
+    roomCount.textContent = rooms.toString();
+    doorCount.textContent = (rooms - 1).toString();
+    wallSwitchCount.textContent = (rooms * 4).toString();
+  };
+
+  slider.addEventListener("input", update);
+  update();
+}
+
+function initializeCodeTabs() {
+  const buttons = document.querySelectorAll(".tab-button");
+  const text = document.querySelector("#codeLessonText");
+  const block = document.querySelector("#codeBlock");
+  if (!buttons.length || !text || !block) return;
+
+  const showLesson = (name) => {
+    const lesson = codeLessons[name];
+    text.innerHTML = `<strong>${lesson.title}</strong>${lesson.text}`;
+    block.textContent = lesson.code;
+    buttons.forEach((button) => button.classList.toggle("active", button.dataset.tab === name));
+  };
+
+  buttons.forEach((button) => {
+    button.addEventListener("click", () => showLesson(button.dataset.tab));
+  });
+
+  showLesson("cell");
+}
+
+function initializeAlgorithmDemo() {
+  const canvas = document.querySelector("#algorithmCanvas");
+  const stepButton = document.querySelector("#algoStepButton");
+  const autoButton = document.querySelector("#algoAutoButton");
+  const resetButton = document.querySelector("#algoResetButton");
+  if (!canvas || !stepButton || !autoButton || !resetButton) return;
+
+  const demo = new AlgorithmDemo(canvas);
+  stepButton.addEventListener("click", () => demo.step());
+  autoButton.addEventListener("click", () => demo.toggleAuto(autoButton));
+  resetButton.addEventListener("click", () => {
+    if (demo.timer) demo.toggleAuto(autoButton);
+    demo.reset();
+  });
+}
+
+function initializeHeroPreview() {
+  const canvas = document.querySelector("#heroCanvas");
+  if (!canvas) return;
+
+  const previewRandom = new SeededRandom("academy-preview");
+  const previewMaze = MazeGenerator.generate(12, 12, () => previewRandom.next());
+  const previewPath = MazePathfinder.findShortestPath(previewMaze, 0, 6, 11, 6);
+  const ctx = canvas.getContext("2d");
+  let pulse = 0;
+
+  const draw = () => {
+    const canvasSize = canvas.width;
+    const padding = 26;
+    const cellSize = (canvasSize - padding * 2) / previewMaze.width;
+
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.fillStyle = "#132027";
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    ctx.save();
+    ctx.beginPath();
+    previewPath.forEach((point, index) => {
+      const x = padding + point.x * cellSize + cellSize / 2;
+      const y = padding + point.y * cellSize + cellSize / 2;
+      if (index === 0) ctx.moveTo(x, y);
+      else ctx.lineTo(x, y);
+    });
+    ctx.lineWidth = 9 + Math.sin(pulse) * 2;
+    ctx.lineCap = "round";
+    ctx.lineJoin = "round";
+    ctx.strokeStyle = "rgba(246, 184, 75, 0.76)";
+    ctx.stroke();
+    ctx.restore();
+
+    ctx.strokeStyle = "#f8f5ee";
+    ctx.lineWidth = 3;
+    for (let y = 0; y < previewMaze.height; y += 1) {
+      for (let x = 0; x < previewMaze.width; x += 1) {
+        const cell = previewMaze.getCell(x, y);
+        const left = padding + x * cellSize;
+        const top = padding + y * cellSize;
+        const right = left + cellSize;
+        const bottom = top + cellSize;
+        ctx.beginPath();
+        if (cell.walls.North) {
+          ctx.moveTo(left, top);
+          ctx.lineTo(right, top);
+        }
+        if (cell.walls.East) {
+          ctx.moveTo(right, top);
+          ctx.lineTo(right, bottom);
+        }
+        if (cell.walls.South) {
+          ctx.moveTo(right, bottom);
+          ctx.lineTo(left, bottom);
+        }
+        if (cell.walls.West) {
+          ctx.moveTo(left, bottom);
+          ctx.lineTo(left, top);
+        }
+        ctx.stroke();
+      }
+    }
+
+    const runner = previewPath[Math.floor(((Math.sin(pulse * 0.55) + 1) / 2) * (previewPath.length - 1))];
+    ctx.fillStyle = "#3777ff";
+    ctx.beginPath();
+    ctx.arc(
+      padding + runner.x * cellSize + cellSize / 2,
+      padding + runner.y * cellSize + cellSize / 2,
+      cellSize * 0.28,
+      0,
+      Math.PI * 2,
+    );
+    ctx.fill();
+
+    pulse += 0.035;
+    requestAnimationFrame(draw);
+  };
+
+  draw();
+}
+
 const canvas = document.querySelector("#mazeCanvas");
 const sizeSlider = document.querySelector("#mazeSize");
 const sizeValue = document.querySelector("#mazeSizeValue");
@@ -698,6 +1073,7 @@ function isTypingInControl(target) {
   return target instanceof HTMLInputElement && target.type === "text";
 }
 
+initializeLessonTools();
 startMaze(Number(sizeSlider.value), currentSeed);
 syncControls();
 requestAnimationFrame(animationLoop);

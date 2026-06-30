@@ -2,7 +2,12 @@
   "name": "maze-speedrun",
   "version": "1.0.0",
   "private": true,
+  "main": "electron-main.js",
   "scripts": {
-    "start": "node server.js"
+    "start": "node server.js",
+    "electron": "electron ."
+  },
+  "devDependencies": {
+    "electron": "^37.2.0"
   }
 }
